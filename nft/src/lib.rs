@@ -24,7 +24,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::ValidAccountId;
 use near_sdk::{
-    env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue, json_types::U128,
+    env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue,
 };
 
 near_sdk::setup_alloc!();
@@ -36,7 +36,7 @@ pub struct Contract {
     metadata: LazyOption<NFTContractMetadata>,
 }
 
-const DATA_IMAGE_SVG_NEAR_ICON: &str = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 288 288'%3E%3Cg id='l' data-name='l'%3E%3Cpath d='M187.58,79.81l-30.1,44.69a3.2,3.2,0,0,0,4.75,4.2L191.86,103a1.2,1.2,0,0,1,2,.91v80.46a1.2,1.2,0,0,1-2.12.77L102.18,77.93A15.35,15.35,0,0,0,90.47,72.5H87.34A15.34,15.34,0,0,0,72,87.84V201.16A15.34,15.34,0,0,0,87.34,216.5h0a15.35,15.35,0,0,0,13.08-7.31l30.1-44.69a3.2,3.2,0,0,0-4.75-4.2L96.14,186a1.2,1.2,0,0,1-2-.91V104.61a1.2,1.2,0,0,1,2.12-.77l89.55,107.23a15.35,15.35,0,0,0,11.71,5.43h3.13A15.34,15.34,0,0,0,216,201.16V87.84A15.34,15.34,0,0,0,200.66,72.5h0A15.35,15.35,0,0,0,187.58,79.81Z'/%3E%3C/g%3E%3C/svg%3E";
+const DATA_IMAGE_SVG_ICON: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYAgMAAACdGdVrAAAADFBMVEX///8AAADXrQD/zQS4oSwKAAAAAXRSTlMAQObYZgAAAGpJREFUeAFjwA9YQ8FU1P4AIMm4+v8XIMW2//9fICUZGwuismv//ndgYFxfX/sdSG2vv3sfSO2tja0HUv///wVRf2tj7wGp7/V3v4EE62OBFEN9/d2fQO21sbEvgZT4/19LQDaEhgZgdwgAzIIqdaTqFjkAAAAASUVORK5CYII=";
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
@@ -57,9 +57,9 @@ impl Contract {
             owner_id,
             NFTContractMetadata {
                 spec: NFT_METADATA_SPEC.to_string(),
-                name: "Need to Find the Pharaons - js13k Games 2022".to_string(),
+                name: "Need to Find the Pharaohs - js13k Games 2022".to_string(),
                 symbol: "NFTPHARAONS".to_string(),
-                icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
+                icon: Some(DATA_IMAGE_SVG_ICON.to_string()),
                 base_uri: None,
                 reference: None,
                 reference_hash: None,
@@ -96,7 +96,6 @@ impl Contract {
         self.tokens.mint(token_id, token_owner_id, Some(token_metadata))
     }
 
-    // near call $ID test_get_account_tokens --accountId $ID
     pub fn test_get_account_tokens(& self) -> Vec<Token> {
         self.tokens.nft_tokens(std::option::Option::default(), std::option::Option::default())
     }
@@ -108,10 +107,9 @@ impl Contract {
         approval_id: Option<u64>,
         memo: Option<String>,
     ) {
-        self.tokens.internal_transfer(&self.tokens.owner_id.clone(), &receiver_id, &token_id, approval_id, memo);
+        self.tokens.internal_transfer(&self.tokens.owner_id.clone(), receiver_id.as_ref(), &token_id, approval_id, memo);
     }
 
-    // near call $ID get_token '{"token_id": "Tribble_Gen1_1-265"}' --accountId $ID
     pub fn get_token(self, token_id: TokenId) -> Option<Token> {
         return self.tokens.nft_token(token_id)
     }
@@ -122,13 +120,12 @@ impl Contract {
         self.tokens.nft_total_supply()
     }
 
-    // near call $ID nft_reassign_ownership '{"token_id": "Tribble_Gen1_1-265", "new_token_owner_id": "bwf-js13k-2021.testnet"}' --accountId $ID
     #[payable]
     pub fn nft_reassign_ownership(&mut self, token_id: TokenId, new_token_owner_id: ValidAccountId) -> String {
         match self.tokens.owner_by_id.get(&token_id) {
             Some(owner_id) => {
-                if owner_id.to_string() == "js13kb-musplay.testnet" {
-                    self.nft_transfer_free(new_token_owner_id, token_id, Some(0001), Some("Congrats on finding and claiming this Pharaon!!".to_owned()));
+                if owner_id == "js13game-vadimsab.testnet" {
+                    self.nft_transfer_free(new_token_owner_id, token_id, Some(0001), Some("Congrats on finding and claiming this Pharaoh!!".to_owned()));
 
                     return "Success: token was transferred to new owner.".to_owned()
                 }
