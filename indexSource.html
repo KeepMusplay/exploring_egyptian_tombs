@@ -1,0 +1,889 @@
+<html>
+    <head>
+        <style>
+            body{
+                background-color: black;
+                margin: 0;
+                overflow-x: hidden;
+                overflow-y: hidden;
+            }
+            particle {
+                position: fixed;
+                top: 0;
+                left: 0;
+                opacity: 0;
+                pointer-events: none;
+                background-repeat: no-repeat;
+                background-size: contain;
+            }
+        
+        .but {
+	font-weight:bold;
+	text-decoration:none;
+	font-family:Arial;
+	box-shadow:inset #ffffff 0px 5px 8px -1px,#d6d6d6 1px 3px 2px;
+	o-box-shadow:inset #ffffff 0px 5px 8px -1px,#d6d6d6 1px 3px 2px;
+	-moz-box-shadow:inset #ffffff 0px 5px 8px -1px,#d6d6d6 1px 3px 2px;
+	-webkit-box-shadow:inset #ffffff 0px 5px 8px -1px,#d6d6d6 1px 3px 2px;
+	background:#000000;
+	background:-o-linear-gradient(90deg, #000000, #000000);
+	background:-moz-linear-gradient( center top, #000000 5%, #000000 100% );
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #000000), color-stop(1, #000000) );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#000000');
+	background:-webkit-linear-gradient(#000000, #000000);
+	background:-ms-linear-gradient(#000000, #000000);
+	background:linear-gradient(#000000, #000000);
+	text-indent:0px;
+	-moz-border-radius:25px;
+	-webkit-border-radius:25px;
+	border-radius:25px;
+	text-align:center;
+	vertical-align:middle;
+	display:inline-block;
+	color:#ffffff;
+	text-shadow:#030405 2px 2px 0px;
+	border-color:#0d1f24;
+	border-width:2px;
+	border-style:solid;
+}
+
+.but:active {
+	box-shadow:inset #ffffff 0px 5px 8px -1px,#d6d6d6 1px 0 2px;
+	o-box-shadow:inset #ffffff 0px 5px 8px -1px,#d6d6d6 1px 0 2px;
+	-moz-box-shadow:inset #ffffff 0px 5px 8px -1px,#d6d6d6 1px 0 2px;
+	-webkit-box-shadow:inset #ffffff 0px 5px 8px -1px,#d6d6d6 1px 0 2px;
+	position:relative;
+}
+
+.but:hover {
+	background:#000000;
+	background:-o-linear-gradient(90deg, #000000, #000000);
+	background:-moz-linear-gradient( center top, #000000 5%, #000000 100% );
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #000000), color-stop(1, #000000) );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#000000');
+	background:-webkit-linear-gradient(#000000, #000000);
+	background:-ms-linear-gradient(#000000, #000000);
+	background:linear-gradient(#000000, #000000);
+}
+        </style>
+    </head>
+    <body>
+        <table style="position: absolute;">
+        <tr>
+            <td>
+                <div><canvas id="main" style="margin: 0; 
+                cursor: url('cursor.cur'), pointer;"></canvas></div>
+            </td>
+            <td>
+                <div>
+                    <canvas id="mini" style="margin: 0;"></canvas>
+                    <canvas id="textContainer" style="margin: 0;"></canvas>
+                </div>
+            </td>
+        </tr>
+        </table>
+        <div id="root"></div>
+        <div id="title" style='overflow-wrap: break-word; position: absolute; z-index: 5;'><span></span></div>
+        <div id="description" style='overflow-wrap: break-word; position: absolute; z-index: 5;'><span></span></div>
+        <div id="rewardBack" style='width: 0px; height: 0px; position: absolute; z-index: 7; background: rgb(129,130,133);
+background: radial-gradient(circle, rgba(129,130,133,0.77) 1%, rgba(0,0,0,0.84) 100%);'>
+        </div>
+        <script src="https://js13kgames.com/src/near-api-js.js" type="text/javascript"></script>
+        <script>
+        
+        
+        
+        
+        
+        
+            // # CONSTANTS
+            const mainCanvas = document.getElementById('main');
+            const miniCanvas = document.getElementById('mini');
+            const textContainer = document.getElementById('textContainer');
+            const title = document.getElementById('title');
+            const description = document.getElementById('description');
+            const rewardBack = document.getElementById('rewardBack');
+            
+            const c = mainCanvas.getContext('2d');
+            const miniCntx = miniCanvas.getContext('2d');
+            
+            const MAIN_CANVAS_WIDTH = 0.70; // percents
+            const MINI_CANVAS_HEIGHT = 0.40; // percents
+            
+            
+                
+let contract;
+let account;
+let wallet;
+let near;
+let nearApi;
+                
+        
+   (async () =>
+   {
+            
+            // ### NEAR JS  
+await initNEAR();
+
+const signIn = () => {
+  wallet.requestSignIn(
+    'js13game-vadimsab.testnet', // contract requesting access
+  )
+}
+
+const signOut = () => {
+  wallet.signOut()
+
+  window.location.reload()
+}
+
+async function claimNFT(id) {
+
+  console.log(id, account, contract);
+
+  /**
+   * This can be enabled if tokens show up for a given user.
+   */
+  const result = await contract.nft_reassign_ownership({
+    token_id: id,
+    new_token_owner_id: account.accountId,
+  })
+
+  if (result.indexOf('Success') !== -1) {
+    console.log(id + `owned by ${account.accountId}`);
+  }
+  else {
+    console.log('error');
+  }
+
+  console.log('Transfer Result', result)
+}
+
+async function viewNFT(id) {
+  const result = await contract.get_token({
+    token_id: id,
+  })
+
+  return result
+}
+
+async function initNEAR() {
+  nearAPI = window.nearApi
+
+  /**
+   * USER KEYSTORE
+   */
+  const { keyStores, connect, WalletConnection } = nearAPI
+  const keyStore = new keyStores.BrowserLocalStorageKeyStore()
+  const config = {
+    networkId: 'testnet',
+    keyStore, // optional if not signing transactions
+    nodeUrl: 'https://rpc.testnet.near.org',
+    walletUrl: 'https://wallet.testnet.near.org',
+    helperUrl: 'https://helper.testnet.near.org',
+    explorerUrl: 'https://explorer.testnet.near.org',
+  }
+
+  near = await connect(config)
+
+  wallet = new WalletConnection(near);
+}
+            
+            
+            
+            
+            
+            
+            
+            
+        
+        
+        
+        
+        
+                
+                
+                
+            // add onresize listener
+            {
+                // document.body.addEventListener('resize', resize);
+            
+                function resize()
+                {
+                
+                    // rendering main canvas
+                    mainCanvas.width = innerWidth * MAIN_CANVAS_WIDTH;
+                    mainCanvas.height = innerHeight;
+                    c.save();
+                    c.fillStyle = '#F0D698';
+                    c.fillRect(0, 0, 1e9, 1e9);
+                    c.restore();
+                    
+                    
+                    
+                    // rendering mini canvas
+                    miniCanvas.width = innerWidth * (1 - MAIN_CANVAS_WIDTH);
+                    miniCanvas.height = innerHeight * MINI_CANVAS_HEIGHT;
+                    miniCntx.save();
+                    miniCntx.fillStyle = '#413D51';
+                    miniCntx.fillRect(0, 0, 1e9, 1e9);
+                    miniCntx.restore();
+                    
+                    
+                    
+                    // rendering text container
+                    textContainer.width = miniCanvas.width;
+                    textContainer.height = innerHeight - miniCanvas.height;
+                
+                }
+                resize();
+            }
+            
+            
+            // add onmouseover listener
+            {
+                let mouseOverCanvas = false, mousePressed = false, prevAnimIsFinished = true, prevAsyncQuery = true, pause = true;
+                let counterWash = 0, limit = 1;//randInt(5, 15);
+                
+                
+                
+                
+                
+                
+                
+            
+            (() =>
+            {
+            let cp = 0;
+            setInterval( () =>
+            {
+                if(!prevAsyncQuery)
+                    cp++;
+                else
+                    cp = 0;
+                    
+                if(cp >= 35)
+                    prevAsyncQuery = true;
+                
+            }, 100);
+            })();
+            
+            
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                async function pop (e) {
+                    counterWash++;
+                    let countIter = randInt(5, 13);
+	                	for (let i = 0; i < countIter; i++) {
+	                		createParticle(e.clientX, e.clientY, i == countIter - 1);
+	                	}
+	                	
+	                if(!prevAsyncQuery) { await showImage(); return; }
+	                
+	                
+                    prevAsyncQuery = false;
+	                	
+	                if(counterWash >= limit)
+	                {
+	                    counterWash = 0, limit = randInt(5, 13);
+	                    
+	                    
+	                    let res = randInt(0, 4);
+	                    let image, blob;
+	                    
+	                    if(res == 4 && wallet.isSignedIn())
+	                    {
+	                        console.log("res == 4");
+	                        
+	                        let idImg = `${(randInt(1500, 4900) * 100)}`;
+	                        console.log(idImg);
+	                        let res = await viewNFT(idImg);
+	                        
+	                        console.log("res", res);
+	                        
+	                        
+	                        if(res && res.owner_id == 'js13game-vadimsab.testnet')
+	                        {
+	                            
+	                            image = new Image();
+	                            
+	                            console.log( await claimNFT(idImg) );
+	                            
+	                            blob = await (fetch(res.metadata.media).then(rd => rd.blob()).catch(e => console.log(e)));
+	                            
+	                            
+	                            blob && blob?.size != 221 && await showReward(blob, `Pharaoh Sculpture P_${idImg/100}`);
+	                            
+	                        }
+	                    }
+	                    else if(res >= 2)
+	                    {
+	                        image = new Image();
+	                        
+	                        blob = await (await fetch(`https://bafybeiakx5f4pioiexvk5xwcubw52x3cnaf4cs5yyztre5bhafu3oc5b5e.ipfs.nftstorage.link/egyptfiles/1 (${[randInt(0, 28)]}).jpg`)).blob();
+	                    }
+	                    
+	                    await showImage(new Image(), blob);
+	                    
+	                }
+	                else await showImage();
+	                
+	                prevAsyncQuery = true;
+	                
+                }
+                function createParticle (x, y, isFinishedIter) {
+                    
+                	const particle = document.createElement('particle');
+	                document.body.appendChild(particle);
+	                let destinationX = (Math.random() - 0.5) * 300;
+	                let destinationY = (Math.random() - 0.5) * 300;
+	                let rotation = Math.random() * 520;
+	                let delay = Math.random() * 200;
+	                
+	                	var color = `rgba(60, 60, 60, 255)`; // Цвет 
+	                	particle.style.boxShadow = `0 0 50px ${(Math.random() * 100)/5}px ${color}`; // Тень
+	                	particle.style.background = color;
+	                	particle.style.borderRadius = '50%'; // Радиус
+	                	width = height = 1e-10; // Размеры
+	                	
+	                particle.style.width = `${width}px`;
+	                particle.style.height = `${height}px`;
+	                const animation = particle.animate([
+	                	{
+	                		transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(0deg)`,
+	                		opacity: 1
+	                	},
+	                	{
+	                		transform: `translate(-50%, -50%) translate(${x + destinationX}px, ${y + destinationY}px) rotate(${rotation}deg)`,
+	                		opacity: 0
+	                	}
+	                	], {
+	                	duration: 777, // Продолжительность всех эффектов
+	                	easing: 'cubic-bezier(0, .9, .57, 1)',
+	                	delay: delay
+	                });
+	                if(isFinishedIter)
+	                {
+	                    animation.onfinish = (e) =>
+	                    {
+	                        prevAnimIsFinished = true;
+	                        removeParticle(e);
+	                    };
+	                }
+	                else
+	                    animation.onfinish = removeParticle;
+                }
+                function removeParticle (e) {
+                	e.srcElement.effect.target.remove();
+                }
+                
+                if (document.body.animate) {
+                	mainCanvas.addEventListener('mouseover', () =>
+                	{
+                	    mouseOverCanvas = true;
+                	});
+                	mainCanvas.addEventListener('mouseout', () =>
+                	{
+                	    mouseOverCanvas = false;
+                	});
+                	mainCanvas.addEventListener('mousedown', () =>
+                	{
+                	    mousePressed = true;
+                	});
+                	mainCanvas.addEventListener('mouseup', () =>
+                	{
+                	    mousePressed = false;
+                	});
+                	mainCanvas.addEventListener('mousemove', (e) =>
+                	{
+                	    mouseOverCanvas && mousePressed && prevAnimIsFinished && prevAsyncQuery && pause && pop(e);
+                	    pause = false;
+                	    setTimeout(() => pause = true, 3e3);
+                	});
+                }
+                
+                
+                
+            }
+            
+            
+            // generating the bricks
+            const buildWall = function(){
+                let sizesBricks = [1, 2.5];
+                let colorsBricks = ["rgb(255, 211, 95)", "rgb(252, 217, 117)", "rgb(239, 169, 94)", "rgb(255, 185, 97)"];
+                let bordersBrick = [0.01, 0.02, 0.03, 0.05];
+                const WIDTH_BRICK = mainCanvas.width / 22;
+                const HEIGHT_BRICK = WIDTH_BRICK * 0.95;
+                
+                
+                
+                const generateRandomBrick = (x, y) =>
+                {
+                    let sizeBrick = sizesBricks[randInt(0, sizesBricks.length - 1)];
+                    let colorBrick = colorsBricks[randInt(0, colorsBricks.length - 1)];
+                    let borderBrick = bordersBrick[randInt(0, bordersBrick.length - 1)];
+                    
+                    
+                    // rendering the brick
+                    
+                    
+                    c.save();
+                    
+                    // border
+                    c.fillStyle = 'black';
+                    c.fillRect(x, y, WIDTH_BRICK * sizeBrick, HEIGHT_BRICK);
+                    
+                    // self brick
+                    c.fillStyle = colorBrick;
+                    c.fillRect(x + borderBrick, y + borderBrick, WIDTH_BRICK * sizeBrick - borderBrick * 2, HEIGHT_BRICK - borderBrick * 2);
+                    
+                    c.restore();
+                    
+                    
+                    
+                    
+                    return sizeBrick;
+                };
+                
+                
+                let brushPos = [0, 0];
+                
+                while(brushPos[0] < mainCanvas.width || brushPos[1] < mainCanvas.height)
+                {
+                    
+                    if(brushPos[0] > mainCanvas.width)
+                    {
+                        brushPos[0] = 0;
+                        brushPos[1] += HEIGHT_BRICK;
+                    }
+                    
+                    let size = generateRandomBrick(brushPos[0], brushPos[1]);
+                    
+                    brushPos[0] += WIDTH_BRICK * size;
+                }
+            };
+            buildWall();
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            // ### MINI WINDOW
+            const WIDTH_VIEWPORT_WINDOW = miniCanvas.width > miniCanvas.height ? miniCanvas.height * 0.8 : miniCanvas.width * 0.8;
+            const HEIGHT_VIEWPORT_WINDOW = WIDTH_VIEWPORT_WINDOW;
+            const offsetXMiniWindow = (miniCanvas.width - WIDTH_VIEWPORT_WINDOW) / 2;
+            const offsetYMiniWindow = (miniCanvas.height - HEIGHT_VIEWPORT_WINDOW) / 2;
+            const showImage = async (HTMLImage, blobDataImage) =>
+            {
+                
+                // at first to default
+                miniCntx.save();
+                miniCntx.fillStyle = '#413D51';
+                miniCntx.fillRect(0, 0, 1e9, 1e9);
+                miniCntx.restore();
+                
+                
+                // drawing viewport
+                miniCntx.save();
+                miniCntx.fillStyle = '#413D59';
+                miniCntx.fillRect(offsetXMiniWindow, offsetYMiniWindow, WIDTH_VIEWPORT_WINDOW, WIDTH_VIEWPORT_WINDOW);
+                miniCntx.restore();
+                
+                
+                
+                // rendering photo
+                if(HTMLImage instanceof Image && blobDataImage)
+                {
+                    
+                miniCntx.save();
+                miniCntx.fillStyle = '#413D51';
+                miniCntx.fillRect(0, 0, 1e9, 1e9);
+                miniCntx.restore();
+                    
+                    
+                    HTMLImage.src = URL.createObjectURL(blobDataImage);
+                    
+                    let lock = true;
+                    HTMLImage.onload = function()
+                    {
+                        lock = false;
+                    };
+                    
+                    await new Promise(r =>
+                    {
+                        
+                        (function check()
+                        {
+                            !lock && !r() || setTimeout(check, 20);
+                        })();
+                        
+                    });
+                    
+                    let width = HTMLImage.width, height = HTMLImage.height;
+                    
+                    
+                    let addOffsetPerX = 0, addOffsetPerY = 0;
+                    
+                    if(width > height)
+                    {
+                        
+                        HTMLImage.width = WIDTH_VIEWPORT_WINDOW + 'px';
+                        HTMLImage.height = WIDTH_VIEWPORT_WINDOW / width * height + 'px';
+                        
+                        addOffsetPerY = (HEIGHT_VIEWPORT_WINDOW - HTMLImage.height) / 4;
+                        
+                    
+                        miniCntx.drawImage(HTMLImage, offsetXMiniWindow + (addOffsetPerX ? addOffsetPerX : 0), (offsetYMiniWindow + addOffsetPerY ? addOffsetPerY : 0));
+                    }
+                    else
+                    {
+                        console.log(HTMLImage.width, HTMLImage.height, miniCanvas.height / 4);
+                        
+                        addOffsetPerX = -offsetXMiniWindow * 2;
+                    
+                        miniCntx.drawImage(HTMLImage, miniCanvas.height / 8, miniCanvas.height / 8, miniCanvas.height / 4 * 3, miniCanvas.height / 4 * 3);
+                    }
+                    
+                    
+                    
+                    
+                    // release resources
+                    HTMLImage.remove();
+                    URL.revokeObjectURL(HTMLImage.src);
+                    
+                }
+                else
+                {
+                    
+                    miniCntx.save();
+                    miniCntx.fillStyle = 'white';
+                    miniCntx.font = `${WIDTH_VIEWPORT_WINDOW / 14}px serif`;
+                    miniCntx.fillText("EMPTY" + ['.', '..', '...'][randInt(0, 2)], offsetXMiniWindow * 2 - (WIDTH_VIEWPORT_WINDOW / 14 / 1.2), offsetYMiniWindow + HEIGHT_VIEWPORT_WINDOW / 2, WIDTH_VIEWPORT_WINDOW / 2.7);
+                    miniCntx.restore();
+                    
+                    
+                }
+                
+            };
+            showImage();
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            // ### TEXT CONTAINER
+            const generateButton = (x, y, width, height, text) =>
+            {
+              
+                let button = document.createElement('button');
+                
+                root.append(button);
+                
+                button.style.cssText = 'cursor: pointer;';
+                button.style.left = x + 'px';
+                button.style.top = y + 'px';
+                button.style.width = width;
+                button.style.height = height;
+                button.style.position = 'absolute';
+                button.style.fontSize = height / 2 + 'px';
+                button.style.zIndex = 5;
+                button.style.lineHeight = `${innerHeight/35}px`;
+                button.setAttribute('class', 'but');
+                
+                
+                if(text)
+                    button.innerHTML = text;
+                
+                return button;
+            };
+            const addText = (button, textSpan, id) =>
+            {
+                            
+                let wrapper = document.createElement('div');            
+                let text = document.createElement('span');
+                root.append(wrapper);
+                wrapper.append(text);
+                
+                text.style.cssText = `
+                    font-family: "Lucida Console", Monaco, monospace;
+                    letter-spacing: 0px;
+                    word-spacing: -2px;
+                    color: #000000;
+                    text-decoration: none;
+                    font-style: normal;
+                    font-variant: normal;
+                    text-transform: uppercase;`;
+                    
+                text.innerHTML = textSpan;  
+                text.id = id;
+                text.style.fontSize = parseInt(button.style.height) / 2  + 'px';
+                text.style.color = 'white';
+                        
+                wrapper.style.left = parseInt(button.style.left) - parseInt(button.style.width) * 1.05 + 'px';
+                wrapper.style.top = parseInt(button.style.top) - parseInt(button.style.height) / 2 /*- parseInt(button.style.height) / 4*/ + 'px';
+                wrapper.style.position = 'absolute';
+                wrapper.style.zIndex = 5;
+                
+                return true;
+            }
+            
+            const WIDTH_TEXT_CONTAINER = textContainer.width;
+            const HEIGHT_TEXT_CONTAINER = textContainer.height;
+            
+            
+            
+            // # AUTHORIZATION
+            {
+                // button SIGN IN/SIGN OUT
+                let xButton, yButton, wButton, hButton = 0;
+                
+                wButton = WIDTH_TEXT_CONTAINER / 6;
+                hButton = wButton / 3.5;
+                
+                xButton = innerWidth - wButton - innerHeight * 0.01;
+                yButton = innerHeight - hButton - innerHeight * 0.01;
+                
+                
+                
+
+  if (wallet.isSignedIn()) {
+    const acct = wallet.getAccountId()
+
+    console.log('IS SIGNED IN!', acct);
+
+    account = await near.account(wallet._authData.accountId)
+    const response = await account.state()
+
+    console.log('STATE', response)
+
+    contract = new nearAPI.Contract(
+      account, // the account object that is connecting
+      'js13game-vadimsab.testnet',
+      {
+      // name of contract you're connecting to
+        viewMethods: ['get_token'], // view methods do not change state but usually return a value
+        changeMethods: ['nft_reassign_ownership'], // change methods modify state
+        sender: account, // account object to initialize and sign transactions.
+      },
+    );
+    
+             
+                
+                let but;
+                
+                (but = generateButton( xButton, yButton, wButton, hButton, "SIGN OUT" )).onclick = signOut;
+                
+                
+                addText(but, acct, "nameWallet");
+    
+    
+  }
+  else
+    generateButton( xButton, yButton, wButton, hButton, "SIGN IN" ).onclick = signIn;
+            
+            }
+            
+            
+            
+            
+            
+            
+            
+            
+            // # REGENERATE WALL FUNC
+            {
+                
+                let xButton, yButton, wButton, hButton = 0;
+                
+                wButton = WIDTH_TEXT_CONTAINER / 6;
+                hButton = wButton / 3.5;
+                
+                xButton = innerWidth - WIDTH_TEXT_CONTAINER + innerHeight * 0.01;
+                yButton = innerHeight - hButton - innerHeight * 0.01;
+                
+                
+                generateButton( xButton, yButton, wButton * 1.3, hButton, "OTHER WALL" ).onclick = buildWall;
+                
+            }
+            
+            
+            // # TITLE and DESCRIPTION
+            const setText = (titleText, descriptionText, color = "rgb(250, 210, 1)") =>
+            {
+              
+              title.width = WIDTH_TEXT_CONTAINER * 0.5;
+              description.width = WIDTH_TEXT_CONTAINER * 0.85;
+              
+              
+              title.children[0].style.cssText = description.children[0].style.cssText = `
+                    font-family: "Lucida Console", Monaco, monospace;
+                    letter-spacing: 0px;
+                    word-spacing: -2px;
+                    text-decoration: none;
+                    font-style: normal;
+                    font-variant: normal;
+                    text-transform: uppercase;
+                    color: ${color};`;
+              
+              title.children[0].fontSize = HEIGHT_TEXT_CONTAINER / 5  + 'px';
+              description.children[0].fontSize = HEIGHT_TEXT_CONTAINER / 3  + 'px';
+              
+              title.children[0].innerHTML = titleText;
+              description.children[0].innerHTML = descriptionText;
+              
+              title.height = HEIGHT_TEXT_CONTAINER / 14;
+              description.height = HEIGHT_TEXT_CONTAINER / 2;
+              
+              let compPropsTitle = getComputedStyle(title);
+              let compPropsDescription = getComputedStyle(description);
+              
+              title.style.left = innerWidth - WIDTH_TEXT_CONTAINER + (WIDTH_TEXT_CONTAINER - title.width) / 2 + 'px';
+              description.style.left =  innerWidth - WIDTH_TEXT_CONTAINER + (WIDTH_TEXT_CONTAINER - description.width) / 2 + 'px';
+            
+              title.style.top = (innerHeight - HEIGHT_TEXT_CONTAINER + innerHeight * 0.03) + 'px';
+              description.style.top = parseInt(title.style.top) + title.height + innerHeight * 0.01 + 'px';
+              
+            };
+            
+            const DEF_TITLE = "Wipe the walls in search of treasures!";
+            const DEF_DESCRIPTION = "Explore the walls of the Egyptian borders, find out the afterlife cult of this people and also find and collect sculptures of deceased pharaohs. Each such sculpture is unique, finding it first you will become the only owner of it!";
+            setText(DEF_TITLE, DEF_DESCRIPTION);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            // ### REWARD VIEW
+            const showReward = async (blobImageData, nameItem) =>
+            {
+                
+                
+                // img congratulation
+                let HTMLImage = document.createElement('img');
+                document.body.append(HTMLImage);
+                
+                HTMLImage.src = URL.createObjectURL(blobImageData);
+                    
+                    let lock = true;
+                    HTMLImage.onload = function()
+                    {
+                        lock = false;
+                    };
+                    
+                    await new Promise(r =>
+                    {
+                        
+                        (function check()
+                        {
+                            !lock && !r() || setTimeout(check, 20);
+                        })();
+                        
+                    });
+                    
+                HTMLImage.style.position = 'absolute';
+                HTMLImage.style.zIndex = 100;
+                HTMLImage.height = HTMLImage.width = innerHeight * 0.5;
+                HTMLImage.style.left = innerWidth / 2 - HTMLImage.width / 2 + 'px';
+                HTMLImage.style.top = innerHeight * 0.2;
+                HTMLImage.id = "imgRew";
+                    
+                
+                
+                // text
+                let textEl = document.createElement('div');
+                document.body.append(textEl);
+                
+                textEl.id = "textEl";
+                
+                textEl.style.cssText = `
+                    font-family: "Lucida Console", Monaco, monospace;
+                    letter-spacing: 0px;
+                    word-spacing: -2px;
+                    color: #000000;
+                    text-decoration: none;
+                    font-style: normal;
+                    font-variant: normal;
+                    text-transform: uppercase;
+                    align: center;`;
+                textEl.style.position = 'absolute';
+                textEl.style.color = 'white';
+                textEl.style.zIndex = 100;
+                textEl.style.top = innerHeight * 0.65 + 'px';
+                textEl.innerHTML = `<center>Congratulations! You have found one of the Pharaoh sculptures(${nameItem})! Now it is only yours! 
+                <br><br>
+                Click to continue..</center>`;
+                textEl.style.fontSize = innerHeight * 0.02 + 'px';
+                textEl.style.left = innerWidth / 2 - parseInt(getComputedStyle(textEl).width) / 2 + 'px';
+                
+                
+                
+                
+                
+                // show content
+                    
+                
+                rewardBack.style.width = innerWidth + 'px';
+                rewardBack.style.height = innerHeight + 'px';
+                
+            };
+            
+            rewardBack.onclick = () =>
+            {
+                
+                document.getElementById('imgRew')?.remove();
+                document.getElementById('textEl')?.remove();
+                
+                rewardBack.style.width = '0px';
+                rewardBack.style.height = '0px';
+            };
+            // showReward();
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            // ### OTHER
+            
+            function randInt(min, max) { // min and max included
+                return Math.floor(Math.random() * (max - min + 1) + min)
+            }
+            
+            
+   })();
+        </script>
+    </body>
+</html>
