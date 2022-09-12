@@ -1,0 +1,587 @@
+<html>
+    <head>
+        <style>
+            body{
+                background-color: black;
+                margin: 0;
+                overflow-x: hidden;
+                overflow-y: hidden;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas"></canvas>
+        <script>
+        
+        // # prepare page
+        
+            const canvas = document.getElementById('canvas');
+            const c = canvas.getContext('2d');
+            
+            
+            canvas.width = innerWidth;
+            canvas.height = innerHeight;
+            
+            
+        // ---
+            
+            const gc = (function(cnxt)
+            {
+                let resultModule = {};
+                
+                
+                let c = cnxt;
+                resultModule.c = c;
+                
+                const coeffScaling = 1.5;
+                const centerGrid = [innerWidth / 2, innerHeight / 2]; // (0; 0) position on our grid
+                const leftEdge = centerGrid[0] - 100 * coeffScaling, rightEdge = centerGrid[0] + 100 * coeffScaling;
+                const upEdge = centerGrid[1] + 100 * coeffScaling, downEdge = centerGrid[0] - 100 * coeffScaling;
+                
+                
+                
+                
+                
+                // # PRIVATE METHODS
+                
+                resultModule.moveTo = (x, y) =>
+                {
+                  
+                    c.moveTo(centerGrid[0] + x * coeffScaling, centerGrid[1] - y * coeffScaling);
+                    
+                };
+                
+                resultModule.lineTo = (x, y) =>
+                {
+                    
+                    c.lineTo(centerGrid[0] + x * coeffScaling, centerGrid[1] - y * coeffScaling);
+                    
+                };
+                
+                resultModule.bezierCurveTo = (cp1x, cp1y, cp2x, cp2y, fx, fy) => // [x, y] every argument here
+                {
+                    
+                    c.bezierCurveTo(centerGrid[0] + cp1x * coeffScaling, centerGrid[1] - cp1y * coeffScaling, centerGrid[0] + cp2x * coeffScaling, centerGrid[1] - cp2y * coeffScaling, centerGrid[0] + fx * coeffScaling, centerGrid[1] - fy * coeffScaling);
+                    
+                };
+                
+                resultModule.quadraticCurveTo = (cp1x, cp1y, fx, fy) => // [x, y] every argument here
+                {
+                    
+                    c.quadraticCurveTo(centerGrid[0] + cp1x * coeffScaling, centerGrid[1] - cp1y * coeffScaling, centerGrid[0] + fx * coeffScaling, centerGrid[1] - fy * coeffScaling);
+                    
+                };
+                
+                resultModule.beginPath = () => c.beginPath();
+                resultModule.fill = () => c.fill();
+                resultModule.stroke = () => c.stroke();
+                
+                
+                resultModule.createRadialGradient = (x0, y0, r0, x1, y1, r1) =>
+                {
+                    c.createRadialGradient(centerGrid[0] + x0 * coeffScaling, centerGrid[1] - y0 * coeffScaling, r0, centerGrid[0] + x1 * coeffScaling, centerGrid[1] - y1 * coeffScaling, r1);
+                };
+                
+                
+                
+                
+                return resultModule;
+                
+            })(c);
+        
+        
+            
+            
+            // gc - our grid context ( wrape under contextCanvas2D )
+            
+            
+            
+            
+            
+                
+            // 1 layer: up body
+            let widthBody = 200 + randInt(-10, +10);
+            let heightTrapezoid = 20 + randInt(-3, +3);
+            let downWidthBody = widthBody *  ( (75 + randInt(-5, 5) ) / 100);
+            let disFromCenterToDownBody = 135 + randInt(-5, +5);
+            let imageData1Layer;
+            
+            
+            // 2 layer - cape
+            let maxDistanceCape =( (95 + randInt(-7, 4) ) / 100) * widthBody;
+            let widthsBetPartsCape = [0.15, 0.25, 0.20, 0.25, 0.15];
+            let disBetWings = widthsBetPartsCape[2] * maxDistanceCape;
+            let widthDownWings = widthsBetPartsCape[1] * maxDistanceCape * 0.8;
+            let heightDownWings = ( (65 + randInt(-4, 4) ) / 100) * disFromCenterToDownBody;
+            let disFromCenterToUpLineCape = 130 + randInt(-6, 6);
+            let lengthUpperLine = maxDistanceCape * 0.75;
+            
+            
+            // 3 layer - head
+            let upperWidthHead = widthBody * ( (45 + randInt(-4, 4) ) / 100);
+            let lowerWidthHead = upperWidthHead *  ( (40 + randInt(-15, 15) ) / 100);
+            let heightHead = disFromCenterToDownBody * ( (73 + randInt(-15, 5) ) / 100);
+            let heightChin = heightHead * ( (2 + randInt(-1, 2) ) / 100);
+            
+            // 4 layer - face
+            let heightCenterLip = heightHead * ( (18 + randInt(-1, 1) ) / 100);
+            let widthLips = upperWidthHead *  ( (30 + randInt(-1, 5) ) / 100);
+            let heightLips = widthLips *   ( (57 + randInt(-3, 0) ) / 100);  
+            
+            let heightCenterEyes = heightHead * ( (70 + randInt(-2, 2) ) / 100);
+            let widthEye = upperWidthHead *  ( (25 + randInt(-3, 3) ) / 100);
+            let heightEye = widthEye * ( (77 + randInt(-20, 10) ) / 100);
+            let disFromCenterToEye = upperWidthHead * 0.32;
+            
+            
+            let design = randInt(0, 13);
+            let cape = randInt(0, 14);
+            
+            
+            let color = `rgb(255, ${randInt(120, 240)}, ${randInt(40, 230)})`;
+            
+            
+            
+            (async () =>
+            {
+            
+                
+            // 1 layer: up body
+            {
+                
+
+
+
+                gc.beginPath();
+
+
+                gc.moveTo(-(widthBody / 2), 0);
+                gc.quadraticCurveTo(0, heightTrapezoid, widthBody / 2, 0);
+                
+                gc.lineTo(downWidthBody / 2, -disFromCenterToDownBody);
+                gc.lineTo(-downWidthBody / 2, -disFromCenterToDownBody);
+                gc.lineTo(-(widthBody / 2), 0);
+                
+                gc.c.fillStyle = color;
+                gc.fill();
+                
+                
+
+
+let loaded = false;
+let img2 = new Image();
+img2.onload =  function() {go()};
+img2.src = `design${design}.png`;   // pattern
+
+// MAIN CODE ---
+function go() {
+
+  // create a pattern  
+  gc.c.fillStyle = gc.c.createPattern(img2, "repeat");
+  
+  // fill canvas with pattern
+  gc.c.fill();
+  
+  gc.c.stroke();
+  
+  loaded = true;
+}
+
+
+                
+            await new Promise(r => {
+                
+                (function check()
+                {
+                    if(loaded) r();
+                    else setTimeout(check, 20);
+                })();
+                
+            });
+
+
+                gc.stroke();
+                
+            }
+            
+            
+            
+            // 2 layer - cape
+            {
+
+                gc.beginPath();
+
+                gc.moveTo(0, 0);
+
+                gc.lineTo(disBetWings / 2, 0);
+
+                gc.lineTo(disBetWings / 2, -heightDownWings);
+
+                gc.lineTo(disBetWings / 2 + widthDownWings, -heightDownWings);
+
+                gc.quadraticCurveTo(disBetWings / 2 + widthsBetPartsCape[3] * maxDistanceCape, -(heightDownWings * 0.95), disBetWings / 2 + widthsBetPartsCape[3] * maxDistanceCape, 0);
+
+                gc.lineTo(maxDistanceCape / 2, disFromCenterToUpLineCape * 0.1);
+
+                let endPoint = [lengthUpperLine / 2, disFromCenterToUpLineCape];
+                
+                gc.bezierCurveTo( endPoint[0] + (maxDistanceCape - endPoint[0]) * 0.2, endPoint[1] * 0.25 , endPoint[0] + (maxDistanceCape - endPoint[0]) * 0.1, endPoint[1] * 0.75, endPoint[0], endPoint[1]);
+
+                // sym
+                endPoint = [-lengthUpperLine / 2, disFromCenterToUpLineCape];
+
+                gc.quadraticCurveTo(0, disFromCenterToUpLineCape * 1.2, endPoint[0], endPoint[1]);
+
+                gc.bezierCurveTo(  endPoint[0] - (maxDistanceCape + endPoint[0]) * 0.1, endPoint[1] * 0.75 , endPoint[0] - (maxDistanceCape + endPoint[0]) * 0.2, endPoint[1] * 0.25, -maxDistanceCape / 2, disFromCenterToUpLineCape * 0.1);
+
+    
+
+                gc.lineTo(-(disBetWings / 2 + widthsBetPartsCape[1] * maxDistanceCape), 0);
+
+    
+                gc.quadraticCurveTo(-(disBetWings / 2 + widthsBetPartsCape[3] * maxDistanceCape), -(heightDownWings * 0.95), -(disBetWings / 2 + widthDownWings), -(heightDownWings));
+
+    
+                gc.lineTo(-disBetWings / 2, -heightDownWings);
+
+                gc.lineTo(-disBetWings / 2, 0);
+
+                gc.lineTo(0, 0);
+                
+                
+                
+                
+
+                
+                let gradient = gc.c.createLinearGradient(20, 0, 220, 0);
+                
+                gradient.addColorStop(0, "blue");
+                gradient.addColorStop(0.5, "blue");
+                gradient.addColorStop(1, "blue");
+
+                gc.c.fillStyle = "#ffffff";
+                
+                gc.fill();
+
+
+let loaded = false;
+let img2 = new Image();
+img2.onload =  function() {go()};
+img2.src = `themeCape${cape}.png`;   // pattern
+
+// MAIN CODE ---
+function go() {
+
+  // create a pattern  
+  gc.c.globalCompositeOperation = "multiply";
+  gc.c.fillStyle = gc.c.createPattern(img2, "repeat-y");
+  
+  // fill canvas with pattern
+  gc.c.fill();
+  
+  gc.c.stroke();
+  
+  loaded = true;
+}
+
+
+                
+            await new Promise(r => {
+                
+                (function check()
+                {
+                    if(loaded) r();
+                    else setTimeout(check, 20);
+                })();
+                
+            });
+                
+                
+                
+            }
+            
+            
+            
+            
+                  
+                        
+            // 3 layer - head
+            {
+    
+    
+    gc.beginPath();
+
+    
+    gc.moveTo(lowerWidthHead / 2, 0);
+
+    gc.quadraticCurveTo(upperWidthHead / 2, heightChin, upperWidthHead / 2, heightHead);
+
+    gc.quadraticCurveTo(0, heightHead * 1.04, -upperWidthHead / 2, heightHead);
+
+    gc.quadraticCurveTo(-upperWidthHead / 2, heightChin, -lowerWidthHead / 2, 0);
+
+    gc.quadraticCurveTo(0, -heightHead * 0.07, lowerWidthHead / 2, 0);
+
+
+    
+    gc.c.globalCompositeOperation = 'destination-out';
+
+    gc.c.globalAlpha = 1;    
+    gc.c.fillStyle = '#000'; 
+    gc.fill();
+
+    gc.c.globalCompositeOperation = 'source-over';
+
+    //gc.c.fillStyle = "#ffe45c";
+    
+            
+            
+    gc.c.fillStyle = color;
+            
+            
+    gc.c.fill();
+
+    gc.stroke();
+
+
+}
+          
+          
+          
+            // 4 - layer - face
+            {
+
+            {
+
+    gc.beginPath();
+
+    gc.moveTo(-widthLips / 2, heightCenterLip);
+
+
+    gc.quadraticCurveTo(0, heightCenterLip - heightLips / 2, widthLips / 2, heightCenterLip);
+
+    gc.quadraticCurveTo(0, heightCenterLip + heightLips / 3, -widthLips / 2, heightCenterLip);
+
+    gc.quadraticCurveTo(0, heightCenterLip - heightCenterLip * 0.99, widthLips / 2, heightCenterLip);
+
+
+    gc.stroke();
+
+}
+
+
+            {
+
+
+    // left eye
+    gc.beginPath();
+
+    gc.moveTo(-disFromCenterToEye, heightCenterEyes);
+
+    gc.quadraticCurveTo(-disFromCenterToEye + widthEye / 2, heightCenterEyes + 
+ heightEye / 2,  -disFromCenterToEye + widthEye, heightCenterEyes);
+
+    gc.quadraticCurveTo(-disFromCenterToEye + widthEye / 2, heightCenterEyes - heightEye / 2,  -disFromCenterToEye, heightCenterEyes);
+
+    gc.stroke();
+
+
+    // right eye
+    gc.beginPath();
+
+    gc.moveTo(disFromCenterToEye, heightCenterEyes);
+
+    gc.quadraticCurveTo(disFromCenterToEye - widthEye / 2, heightCenterEyes + 
+ heightEye / 2,  disFromCenterToEye - widthEye, heightCenterEyes);
+
+    gc.quadraticCurveTo(disFromCenterToEye - widthEye / 2, heightCenterEyes - heightEye / 2,  disFromCenterToEye, heightCenterEyes);
+
+    gc.stroke();
+    
+
+    
+}
+
+            }
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            // up cape
+            {
+
+    gc.beginPath();
+
+
+    gc.moveTo(upperWidthHead / 2, heightHead);
+    
+
+    gc.quadraticCurveTo( lengthUpperLine / 2, disFromCenterToUpLineCape, lengthUpperLine / 2 * 1.03, disFromCenterToUpLineCape);
+
+    gc.quadraticCurveTo( 0, disFromCenterToUpLineCape * 1.57, -lengthUpperLine / 2 * 1.03, disFromCenterToUpLineCape);
+
+
+    gc.quadraticCurveTo( -lengthUpperLine / 2, disFromCenterToUpLineCape, -upperWidthHead / 2, heightHead);
+
+
+
+
+
+    
+    gc.c.globalCompositeOperation = 'destination-out';
+
+    gc.c.globalAlpha = 1;    
+    gc.c.fillStyle = '#000'; 
+    gc.fill();
+
+    gc.c.globalCompositeOperation = 'source-over';
+
+    gc.c.fillStyle = "#ffffff";
+    gc.c.fill();
+
+
+
+
+    
+    
+let loaded = false;
+let img2 = new Image();
+img2.onload =  function() {go()};
+img2.src = `themeVertCape${cape}.png`;   // pattern
+
+// MAIN CODE ---
+function go() {
+
+  // create a pattern  
+  gc.c.globalCompositeOperation = "multiply";
+  gc.c.fillStyle = gc.c.createPattern(img2, "repeat-y");
+  
+  // fill canvas with pattern
+  gc.c.fill();
+  
+  gc.c.stroke();
+  
+  loaded = true;
+}
+
+
+                
+            await new Promise(r => {
+                
+                (function check()
+                {
+                    if(loaded) r();
+                    else setTimeout(check, 20);
+                })();
+                
+            });
+
+    gc.stroke();
+
+    
+    
+}
+            
+            
+            
+            
+            
+            
+            // save image
+            let imgData = c.getImageData((innerWidth - innerHeight) / 2, 0, innerHeight, innerHeight);
+
+            canvas.width = canvas.height = innerHeight;
+
+            c.putImageData(imgData, 0, 0);
+            
+            
+            let base64 = canvas.toDataURL();
+            
+            
+            
+            // sent to server
+            let blob = await (await fetch(base64)).blob();
+            let counter = await fetch('counter.txt').then(d => d.text()).then(t => t);
+            
+            let formData = new FormData();
+            formData.append("image", blob, `image${counter}.png`);
+            
+            
+            await fetch('acceptfile.php',
+            {
+                method: 'POST',
+                body: formData
+            });
+            
+            
+            location.href = location.href;
+            
+            
+            
+            
+                
+            })();
+            
+            
+            
+            
+            // draw curve lines with help mouse
+            let mouseActions = new Array();
+            {
+                
+                let mouseOverCanvas = false, mousePressed = false;
+                
+                    canvas.addEventListener('mouseover', () =>
+                	{
+                	    mouseOverCanvas = true;
+                	});
+                	canvas.addEventListener('mouseout', () =>
+                	{
+                	    mouseOverCanvas = false;
+                	});
+                	canvas.addEventListener('mousedown', () =>
+                	{
+                	    mousePressed = true;
+                	});
+                	canvas.addEventListener('mouseup', () =>
+                	{
+                	    mousePressed = false;
+                	});
+                	canvas.addEventListener('mousemove', (e) =>
+                	{
+                	    
+                	    let action = null;
+                	    
+                	    mouseOverCanvas && mousePressed && (action = (e) =>
+                	    {
+                	        c.save();
+                	        
+                	        
+                	        c.fillStyle = "black";
+                	        c.fillRect(e.clientX, e.clientY, 1, 1);
+                	        
+                	        
+                	        c.restore();
+                	    })(e);
+                	    
+                	    action && mouseActions.push(() => action(e));
+                	    
+                	});
+            }
+            
+            
+            
+            
+            function randInt(min, max) { // min and max included
+                return Math.floor(Math.random() * (max - min + 1) + min)
+            }
+            
+            
+        </script>
+    </body>
+</html>
